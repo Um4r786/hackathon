@@ -1,2 +1,1 @@
-print("Karthik")
-print("Super Karthik")
+print("jh")

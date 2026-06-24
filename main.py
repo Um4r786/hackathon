@@ -1,1 +1,4 @@
+<<<<<<< HEAD
 print("kwgja")
+=======
+>>>>>>> main

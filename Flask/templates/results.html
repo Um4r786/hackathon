@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="p-4">
+
+    <h2>Results for {{ material }}</h2>
+    <div class="row mt-4">
+
+        {% for prop, data in rankings.items() %}
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ prop }}</h5>
+                    <p class="card-text">
+                        <strong>Ranking:</strong> {{ data.ranking }}<br>
+                        <strong>Confidence:</strong> {{ data.confidence }}
+                    </p>
+                    <a href="/explain/{{ prop }}" class="btn btn-primary">
+                        Ranking Explain
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+</body>
+</html>

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # 1. Load the data (Using the 5000 row trick for Alexandria!)
-alexandria_df = pd.read_csv("alexandria_sample_5000.csv", nrows=5000)
+alexandria_df = pd.read_csv("alexandria_sample_5000.csv", nrows=100)
 stainless_df = pd.read_csv("stainless_steel.csv", encoding='latin1')
 carbon_df = pd.read_csv("carbon_steel.csv", encoding='latin1')
 
@@ -47,13 +47,12 @@ features = [
     'carbon', 'manganese', 'chromium', 'nickel', 'silicon', 'molybdenum', 
     'band_gap', 'total_energy', 'volume'
 ]
-target = 'yield_strength_mpa' 
+target = ['yield_strength_mpa', 'ultimate_tensile_strength_mpa', 'elongation_percent', 'Hardness (HB)']
 
 # Extract the arrays for TensorFlow
 X = matintel_master[features].values
 y = matintel_master[target].values
 
-print("🎉 Master Database Built Successfully!")
 print(f"X shape (Features): {X.shape}")
 print(f"y shape (Target): {y.shape}")
 

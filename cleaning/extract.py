@@ -47,7 +47,7 @@ features = [
     'carbon', 'manganese', 'chromium', 'nickel', 'silicon', 'molybdenum', 
     'band_gap', 'total_energy', 'volume'
 ]
-target = ['yield_strength_mpa', 'ultimate_tensile_strength_mpa', 'elongation_percent', 'Hardness (HB)']
+target = ['yield_strength_mpa', 'ultimate_tensile_strength_mpa', 'elongation_percent']
 
 # Extract the arrays for TensorFlow
 X = matintel_master[features].values

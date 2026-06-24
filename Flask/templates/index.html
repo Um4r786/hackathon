@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MatIntel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <!-- Header Section -->
+    <div class="py-5 text-center bg-dark text-white">
+        <h1 class="fw-bold">MatIntel: Material Intelligence Platform</h1>
+        <p class="lead mt-3">Search materials and explore ranked properties with confidence insights</p>
+    </div>
+
+    <!-- Main Form Container -->
+    <div class="container mt-5">
+
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+
+                <div class="card shadow-sm p-4">
+                    <h4 class="mb-4 text-center">Material Search</h4>
+
+                    <form action="/search" method="get">
+
+                        <div class="mb-3">
+                            <label for="material" class="form-label">Material*</label>
+                            <input type="text" id="material" name="material" class="form-control" placeholder="e.g., Aluminium">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="properties" class="form-label">Relevant Properties (comma separated)</label>
+                            <input type="text" id="properties" name="properties" class="form-control" placeholder="e.g., tensile strength, density, hardness">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Search</button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

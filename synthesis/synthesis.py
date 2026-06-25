@@ -12,27 +12,42 @@ def extract_mp_data(api_key):
         "energy_above_hull", "bulk_modulus", "shear_modulus"
     ]
     
-    with MPRester(api_key) as mpr:
-        # Pulling a subset of Iron (Fe) containing materials
-        docs = mpr.materials.summary.search(elements=["Fe"], fields=desired_fields)
-        
     data = []
-    for doc in docs:
-        b_mod = doc.bulk_modulus.get('vrh') if isinstance(doc.bulk_modulus, dict) else doc.bulk_modulus
-        s_mod = doc.shear_modulus.get('vrh') if isinstance(doc.shear_modulus, dict) else doc.shear_modulus
-        
-        data.append({
-            "Material_ID": str(doc.material_id),
-            "Formula": doc.formula_pretty,
-            "Density_(g/cm3)": doc.density,
-            "Energy_Above_Hull_(eV)": doc.energy_above_hull,
-            "Bulk_Modulus_(GPa)": b_mod,
-            "Shear_Modulus_(GPa)": s_mod,
-            "Source_DB": "Materials_Project"
-        })
-        
-    print(f"Extracted {len(data)} materials from MP.")
-    return pd.DataFrame(data)
+    # Broaden structural metals, but we will search them ONE at a time (OR logic)
+    structural_metals = ["Fe", "Al", "Ti", "Ni", "Mg", "Cu"]
+    
+    with MPRester(api_key) as mpr:
+        for metal in structural_metals:
+            print(f"Fetching {metal} materials with elasticity data...")
+            docs = mpr.materials.summary.search(
+                elements=[metal],
+                has_props=["elasticity"], # ONLY get rows with Bulk/Shear Modulus
+                fields=desired_fields
+            )
+            
+            for doc in docs:
+                # Safely extract the VRH average
+                b_mod = doc.bulk_modulus.get('vrh') if isinstance(doc.bulk_modulus, dict) else doc.bulk_modulus
+                s_mod = doc.shear_modulus.get('vrh') if isinstance(doc.shear_modulus, dict) else doc.shear_modulus
+                
+                data.append({
+                    "Material_ID": str(doc.material_id),
+                    "Formula": doc.formula_pretty,
+                    "Density_(g/cm3)": doc.density,
+                    "Energy_Above_Hull_(eV)": doc.energy_above_hull,
+                    "Bulk_Modulus_(GPa)": b_mod,
+                    "Shear_Modulus_(GPa)": s_mod,
+                    "Source_DB": "Materials_Project"
+                })
+                
+    # Convert to DataFrame
+    mp_df = pd.DataFrame(data)
+    
+    # CRITICAL: Drop duplicates! (e.g. an Fe-Al alloy will be pulled in both the Fe and Al loops)
+    mp_df = mp_df.drop_duplicates(subset=["Material_ID"])
+    
+    print(f"Extracted {len(mp_df)} unique materials from MP.")
+    return mp_df
 
 
 # ==========================================

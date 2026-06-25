@@ -69,6 +69,7 @@ def predict():
         material_id=material,
         input_properties=user_inputs,
     )
+    print(similar_materials)
     # ---------------------------------------------
 
     return render_template(

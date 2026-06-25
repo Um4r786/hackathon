@@ -115,24 +115,3 @@ def predict(user_inputs: dict) -> list[dict]:
 
     return results
 
-# ==========================================
-# TEST
-# ==========================================
-if __name__ == "__main__":
-    test_input = {
-        "C_Wt_%": 0.45,
-        "Mn_Wt_%": 0.75,
-        "P_Wt_%": 0.02,
-        "S_Wt_%": 0.03,
-        "Si_Wt_%": 0.20,
-        "Ni_Wt_%": 0.0,
-        "Cr_Wt_%": 0.0,
-        "Mo_Wt_%": 0.0,
-        "Ti_Wt_%": 0.0,
-        "Density_(g/cm3)": -999,
-        "Energy_Above_Hull_(eV)": -999
-    }
-
-    print("\nTest prediction (composition-only input):")
-    for r in predict(test_input):
-        print(f"  {r['property']}: {r['value']:.3f}")

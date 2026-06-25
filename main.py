@@ -1,4 +1,1 @@
-<<<<<<< HEAD
-print("kwgja")
-=======
->>>>>>> main
+print("wnmetwe")

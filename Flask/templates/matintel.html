@@ -32,6 +32,20 @@
                            required>
                 </div>
 
+                <!-- Track selector -->
+                <div class="mb-4">
+                    <label class="form-label">Input Track</label>
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-primary active" id="btn-chemistry">
+                            ⚗ Chemistry Track (Composition → Mechanical)
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="btn-physics">
+                            ⚙ Physics Track (Density / Modulus → Physical)
+                        </button>
+                    </div>
+                    <small class="text-muted">Select the track that matches your known inputs.</small>
+                </div>
+
                 <!-- Property Table -->
                 <label class="form-label">Known Material Properties</label>
 
@@ -76,13 +90,8 @@
                 <!-- Multi-select predicted properties -->
                 <div class="mb-4">
                     <label class="form-label">Predicted Properties</label>
-                    <select name="predict_properties" class="form-select" multiple size="5">
-                        <option value="tensile_strength">Tensile Strength</option>
-                        <option value="yield_strength">Yield Strength</option>
-                        <option value="density">Density</option>
-                        <option value="hardness">Hardness</option>
-                        <option value="thermal_conductivity">Thermal Conductivity</option>
-                        <option value="elastic_modulus">Elastic Modulus</option>
+                    <select name="predict_properties" id="predict-select" class="form-select" multiple size="5">
+                        <!-- Populated by updateTrackUI() on load -->
                     </select>
                     <small class="text-muted">Hold CTRL (Windows) or CMD (Mac) to select multiple.</small>
                 </div>
@@ -147,30 +156,88 @@
 
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    const propertyOptions = [
-        "density",
-        "energy_above_hull_(eV)",
-        "bulk_modulus_ (GPa)",
-        "shear_modulus_(GPa)",
-        "ultimate_tensile_strength_(MPa)",
-        "yield_strength_(MPa)",
-        "elongation_(%)",
-        "hardness_(HB)"
+    // Property names must match the model's column names exactly
+    const CHEMISTRY_INPUTS = [
+        "C_Wt_%", "Mn_Wt_%", "P_Wt_%", "S_Wt_%",
+        "Si_Wt_%", "Ni_Wt_%", "Cr_Wt_%", "Mo_Wt_%", "Ti_Wt_%"
+    ];
+    const PHYSICS_INPUTS = [
+        "Density_(g/cm3)", "Energy_Above_Hull_(eV)",
+        "Bulk_Modulus_(GPa)", "Shear_Modulus_(GPa)"
+    ];
+    const CHEMISTRY_OUTPUTS = [
+        "Ultimate_Tensile_Strength_(MPa)", "Yield_Strength_(MPa)",
+        "Elongation_(%)", "Hardness_(HB)"
+    ];
+    const PHYSICS_OUTPUTS = [
+        "Density_(g/cm3)", "Energy_Above_Hull_(eV)",
+        "Bulk_Modulus_(GPa)", "Shear_Modulus_(GPa)"
     ];
 
+    // Detect active track from the server-rendered value (set after a POST)
+    const serverTrack = "{{ track | default('chemistry') }}";
+    let activeTrack = serverTrack;
+
+    function getPropertyOptions() {
+        return activeTrack === "chemistry" ? CHEMISTRY_INPUTS : PHYSICS_INPUTS;
+    }
+
+    function updateTrackUI() {
+        // Toggle button styles
+        document.getElementById("btn-chemistry").classList.toggle("active", activeTrack === "chemistry");
+        document.getElementById("btn-physics").classList.toggle("active", activeTrack === "physics");
+
+        // Swap the predict_properties checkboxes
+        const outputOptions = activeTrack === "chemistry" ? CHEMISTRY_OUTPUTS : PHYSICS_OUTPUTS;
+        const select = document.getElementById("predict-select");
+        select.innerHTML = outputOptions
+            .map(p => `<option value="${p}">${p.replace(/_/g, " ")}</option>`)
+            .join("");
+
+        // Update any existing input rows' dropdowns
+        document.querySelectorAll("#property-table tbody tr").forEach(row => {
+            const menu = row.querySelector(".dropdown-menu");
+            if (menu) {
+                menu.innerHTML = getPropertyOptions()
+                    .map(p => `<li><a class="dropdown-item property-choice" href="#">${p}</a></li>`)
+                    .join("");
+                row.querySelectorAll(".property-choice").forEach(item => {
+                    item.addEventListener("click", function (e) {
+                        e.preventDefault();
+                        row.querySelector("button.dropdown-toggle").textContent = this.textContent;
+                        row.querySelector("input[name='properties']").value = this.textContent;
+                    });
+                });
+            }
+        });
+    }
+
+    document.getElementById("btn-chemistry").addEventListener("click", function () {
+        activeTrack = "chemistry";
+        updateTrackUI();
+    });
+    document.getElementById("btn-physics").addEventListener("click", function () {
+        activeTrack = "physics";
+        updateTrackUI();
+    });
+
+    const propertyOptions = getPropertyOptions();
+
     function attachRowBehaviour(row) {
-        // Build dropdown menu items
+        // Build dropdown menu items for the current track
         const menu = row.querySelector(".dropdown-menu");
         if (menu && menu.children.length === 0) {
-            menu.innerHTML = propertyOptions
-                .map(p => `<li><a class="dropdown-item property-choice">${p}</a></li>`)
+            menu.innerHTML = getPropertyOptions()
+                .map(p => `<li><a class="dropdown-item property-choice" href="#">${p}</a></li>`)
                 .join("");
         }
 
         // Dropdown selection
         row.querySelectorAll(".property-choice").forEach(item => {
-            item.addEventListener("click", function () {
+            item.addEventListener("click", function (e) {
+                e.preventDefault();
                 row.querySelector("button.dropdown-toggle").textContent = this.textContent;
                 row.querySelector("input[name='properties']").value = this.textContent;
             });
@@ -213,8 +280,9 @@
 
     // Attach behaviour to any pre-rendered rows
     document.querySelectorAll("#property-table tbody tr").forEach(attachRowBehaviour);
-    </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    // Initialise track UI on page load
+    updateTrackUI();
+    </script>
 </body>
 </html>

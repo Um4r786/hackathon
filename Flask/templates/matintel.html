@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MatIntel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <!-- Header -->
+    <div class="py-5 text-center bg-dark text-white mb-4">
+        <h1 class="fw-bold">MatIntel: Material Intelligence Platform</h1>
+        <p class="lead mt-3">Predict material properties and explore similar materials</p>
+    </div>
+
+    <div class="container mb-5">
+
+        <!-- Input Card -->
+        <div class="card shadow-sm p-4 mb-5">
+            <h4 class="mb-4 text-center">Material Input</h4>
+
+            <form action="/predict" method="post">
+
+                <!-- Material -->
+                <div class="mb-4">
+                    <label class="form-label">Material*</label>
+                    <input type="text"
+                           name="material"
+                           class="form-control"
+                           placeholder="e.g., Aluminium"
+                           value="{{ material or '' }}"
+                           required>
+                </div>
+
+                <!-- Property Table -->
+                <label class="form-label">Known Material Properties</label>
+
+                <table class="table table-bordered" id="property-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Property</th>
+                            <th>User Value</th>
+                            <th style="width: 60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Optionally re-render previous inputs -->
+                        {% if inputs %}
+                            {% for row in inputs %}
+                                <tr>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                                                {{ row.property }}
+                                            </button>
+                                            <ul class="dropdown-menu"></ul>
+                                            <input type="hidden" name="properties" value="{{ row.property }}">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="any" class="form-control" name="values" value="{{ row.value }}">
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-danger remove-row" type="button">X</button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+
+                <button type="button" class="btn btn-outline-secondary mb-4" id="add-row">
+                    + Add Property Row
+                </button>
+
+                <!-- Multi-select predicted properties -->
+                <div class="mb-4">
+                    <label class="form-label">Predicted Properties</label>
+                    <select name="predict_properties" class="form-select" multiple size="5">
+                        <option value="tensile_strength">Tensile Strength</option>
+                        <option value="yield_strength">Yield Strength</option>
+                        <option value="density">Density</option>
+                        <option value="hardness">Hardness</option>
+                        <option value="thermal_conductivity">Thermal Conductivity</option>
+                        <option value="elastic_modulus">Elastic Modulus</option>
+                    </select>
+                    <small class="text-muted">Hold CTRL (Windows) or CMD (Mac) to select multiple.</small>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Predict</button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Output: Predictions Table -->
+        {% if predictions %}
+        <div class="card shadow-sm p-4 mb-4">
+            <h4 class="mb-3">Predicted Properties</h4>
+            <table class="table table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Predicted Property</th>
+                        <th>Predicted Value</th>
+                        <th>Confidence Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in predictions %}
+                    <tr>
+                        <td>{{ p.property }}</td>
+                        <td>{{ "%.3f"|format(p.value) }}</td>
+                        <td>{{ "%.1f"|format(p.confidence * 100) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Output: Similar Materials Cards -->
+        {% if similar_materials %}
+        <div class="mb-4">
+            <h4 class="mb-3">Similar Materials</h4>
+            <div class="row g-3">
+                {% for m in similar_materials %}
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ m.name }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                Similarity: {{ "%.1f"|format(m.similarity * 100) }}%
+                            </h6>
+                            <ul class="list-unstyled mt-3 mb-0">
+                                {% for k, v in m.key_properties.items() %}
+                                <li><strong>{{ k|replace("_", " ")|title }}:</strong> {{ v }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+    const propertyOptions = [
+        "density",
+        "energy_above_hull_(eV)",
+        "bulk_modulus_ (GPa)",
+        "shear_modulus_(GPa)",
+        "ultimate_tensile_strength_(MPa)",
+        "yield_strength_(MPa)",
+        "elongation_(%)",
+        "hardness_(HB)"
+    ];
+
+    function attachRowBehaviour(row) {
+        // Build dropdown menu items
+        const menu = row.querySelector(".dropdown-menu");
+        if (menu && menu.children.length === 0) {
+            menu.innerHTML = propertyOptions
+                .map(p => `<li><a class="dropdown-item property-choice">${p}</a></li>`)
+                .join("");
+        }
+
+        // Dropdown selection
+        row.querySelectorAll(".property-choice").forEach(item => {
+            item.addEventListener("click", function () {
+                row.querySelector("button.dropdown-toggle").textContent = this.textContent;
+                row.querySelector("input[name='properties']").value = this.textContent;
+            });
+        });
+
+        // Remove row
+        const removeBtn = row.querySelector(".remove-row");
+        if (removeBtn) {
+            removeBtn.addEventListener("click", function () {
+                row.remove();
+            });
+        }
+    }
+
+    document.getElementById("add-row").addEventListener("click", function () {
+        const tbody = document.querySelector("#property-table tbody");
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                        Select Property
+                    </button>
+                    <ul class="dropdown-menu"></ul>
+                    <input type="hidden" name="properties">
+                </div>
+            </td>
+            <td>
+                <input type="number" step="any" class="form-control" name="values" placeholder="Enter value">
+            </td>
+            <td>
+                <button class="btn btn-danger remove-row" type="button">X</button>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+        attachRowBehaviour(row);
+    });
+
+    // Attach behaviour to any pre-rendered rows
+    document.querySelectorAll("#property-table tbody tr").forEach(attachRowBehaviour);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
